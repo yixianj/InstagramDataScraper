@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS raw_user_data;
+DROP TABLE IF EXISTS post_data;
+DROP TABLE IF EXISTS ig_users;
+DROP TABLE IF EXISTS search_data;
