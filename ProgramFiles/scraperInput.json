@@ -1,0 +1,21 @@
+{
+  "psql": {
+    "host": "",
+    "dbname": "",
+    "user": "",
+    "password": ""
+  },
+  "googleCSE": {
+    "query": "hong kong",
+    "exact_terms": "gmail",
+    "country": "china"
+  },
+  "search": {
+    "city": "hong kong",
+    "country": "china",
+    "email": "gmail"
+  },
+  "io": {
+    "filename": "hong_kong_1.csv"
+  }
+}
