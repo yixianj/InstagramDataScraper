@@ -20,6 +20,9 @@ SET
         {%- else -%}
             $${"val": {{value}}}$$
         {%- endif -%}
+    {%- elif key == "search" %} search = search || '{
+    {{searchId}}
+    }'
     {%- else -%}{{value}}
     {%- endif -%}
 

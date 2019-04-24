@@ -23,6 +23,7 @@ getRecordIdTemp = env.get_template('getRecordId.sql')
 insertRawUserDataP1 = """INSERT INTO raw_user_data(user_data) VALUES (' """
 insertRawUserDataP2 = """');"""
 updateUserTemp = env.get_template('updateUserTable.sql')
+insertSearchForUser = env.get_template('insertSearchForUser.sql')
 
 def updateUserAndPostData(cur, conn, scraperInput, userData, searchId):
     print("UPDATING USER DATA")
@@ -36,7 +37,9 @@ def updateUserAndPostData(cur, conn, scraperInput, userData, searchId):
     userData["num_posts"] = userData["edge_owner_to_timeline_media"]["count"]
     userData["full_name"] = clean.removeEmojisAndOther(userData["full_name"])
     userData["biography"] = clean.removeEmojisAndOther(userData["biography"])
-    updateUserQuery = updateUserTemp.render(tableName = "ig_users", userData = userData, id = userData["id"])
+    updateUserQuery = updateUserTemp.render(tableName = "ig_users", userData = userData,
+                                            id = userData["id"],
+                                            searchId = searchId)
     try:
         cur.execute(updateUserQuery)
     except psycopg2.error as psycopErr:
@@ -105,6 +108,14 @@ def instagramDataScraper():
         insertUserQuery = insertUserTemp.render(userData=userData)
         try:
             cur.execute(insertUserQuery)
+            insertSearchForUserQuery = insertSearchForUser.render(id = cur.fetchone()[0], searchId = searchId)
+            cur.execute(insertSearchForUserQuery)
+
+        except psycopg2.DataError as dataErr:
+            print("errorPsycopg2: dataErr")
+            print(dataErr)
+            print("insertUserQuery:\n" + insertUserQuery)
+            exit(1)
         except psycopg2.IntegrityError as duplicateErr:
             print("errorPsycopg2: duplicateErr")
             print(duplicateErr)
