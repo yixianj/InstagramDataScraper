@@ -1,7 +1,8 @@
 /* Create tables */
 CREATE TABLE raw_user_data(
     id BIGSERIAL,
-    user_data json
+    user_data json,
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE search_data(
