@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Instagram scraper using GoogleCSE
+# programmed by: Adina (Yixian) Jia 2019
+# https://github.com/yixianj
 from jinja2 import Template, FileSystemLoader, Environment
 import json
 import extractData
@@ -24,7 +27,17 @@ insertRawUserDataP1 = """INSERT INTO raw_user_data(user_data) VALUES (' """
 insertRawUserDataP2 = """');"""
 updateUserTemp = env.get_template('updateUserTable.sql')
 insertSearchForUser = env.get_template('insertSearchForUser.sql')
+createPostViewTemp = env.get_template('createPostView.sql')
 
+"""
+Updates an existing row in the ig_users table
+using data from the json object in the paramater userData.
+After updating the user row,
+new posts by this user are added to the post_data table.
+
+scraperInput is the json object read from scraperInput.json
+searchId is the integer id of the search being conducted; stored in search_data
+"""
 def updateUserAndPostData(cur, conn, scraperInput, userData, searchId):
     print("UPDATING USER DATA")
     cur.execute("SELECT search FROM ig_users WHERE id = " + userData["id"] + ";")
@@ -50,7 +63,21 @@ def updateUserAndPostData(cur, conn, scraperInput, userData, searchId):
     else:
         conn.commit()
         print("UPDATED ROW IN USERS")
+"""
+Main function of this Instagram Data scraper
+Connects to a psql database
+Inserts row in search_data,
+Conducts googleCSE search using inputs read from scraperInput.json
 
+For each page of results, for each result in the page
+Opens link, and if it is a profile page it will:
+    Inserts rows in ig_users table, then rows in post_data for this ig_user
+    
+Error messages are printed when desired data cannot be extracted (i.e. not a profile page)
+or link cannot be open
+
+Outputs data into file specified in scraperInput.json
+"""
 def instagramDataScraper():
     print("Reading input from scraperInput.json")
     with open("scraperInput.json", "r+") as inputFile:
@@ -91,7 +118,6 @@ def instagramDataScraper():
 
     for user in users:
         userData = extractData.getUserData(user)
-
         try:
             userData["search"] = [searchId]
             if (scraperInput["search"]["email"] != ""):
@@ -110,7 +136,6 @@ def instagramDataScraper():
             cur.execute(insertUserQuery)
             insertSearchForUserQuery = insertSearchForUser.render(id = cur.fetchone()[0], searchId = searchId)
             cur.execute(insertSearchForUserQuery)
-
         except psycopg2.DataError as dataErr:
             print("errorPsycopg2: dataErr")
             print(dataErr)
@@ -141,6 +166,7 @@ def instagramDataScraper():
                 postData["edge_media_to_caption"] = clean.removeEmojisAndOther(postData["edge_media_to_caption"]
                                                                     ["edges"][0]["node"]
                                                                     ["text"])
+                postData["owner"] = userData["id"]
             except LookupError as lookupErr:
                 print("LookupError: key or index does not exist.")
                 print(lookupErr)
@@ -165,8 +191,18 @@ def instagramDataScraper():
         print("Finished posts for a user")
     print("Finished inserting data into tables: ig_users, post_data")
 
+    # Create Post View Query from stored data in ig_users and post_data
+    # Users listed in descending order of most likes, then comments
+    # In other words, most popular users are listed first
+    cur.execute(createPostViewTemp.render())
+    print("Finished create post_data_view")
+
     # Output data
     dataIO.outputData(cur, "ig_users", scraperInput["io"]["filename"])
+    print("Finished outputting file")
+    cur.close()
+
+    print("##### Instagram Data Scraper has finished execution #####")
 
 def main():
     instagramDataScraper()
