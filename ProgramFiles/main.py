@@ -170,7 +170,7 @@ def instagramDataScraper():
             except LookupError as lookupErr:
                 print("LookupError: key or index does not exist.")
                 print(lookupErr)
-                print("### postData ###\n" + str(postData))
+                #print("### postData ###\n" + str(postData))
                 pass
 
             insertPostQuery = insertPostTemp.render(postData = postData)
@@ -181,10 +181,14 @@ def instagramDataScraper():
                 print("errorPsycopg2: duplicateErr. Post already stored.")
                 print(duplicateErr)
                 conn.rollback()
-                pass
+                break
             except psycopg2.InternalError as internalErr:
                 print("errorPsycopg2: internalErr")
                 print(internalErr)
+            except psycopg2.error.SyntaxError as syntaxError:
+                print("errorPsycopg2: syntaxErr")
+                print(syntaxErr)
+                print("Query\n", insertPostQuery)
             else:
                 conn.commit()
                 print("INSERT ROW IN POSTS")
