@@ -23,8 +23,6 @@ insertUserTemp = env.get_template('insertUserData.sql')
 insertPostTemp = env.get_template('insertPostData.sql')
 insertSearchDataTemp = env.get_template('insertSearchData.sql')
 getRecordIdTemp = env.get_template('getRecordId.sql')
-insertRawUserDataP1 = """INSERT INTO raw_user_data(user_data) VALUES (' """
-insertRawUserDataP2 = """');"""
 updateUserTemp = env.get_template('updateUserTable.sql')
 insertSearchForUser = env.get_template('insertSearchForUser.sql')
 createPostViewTemp = env.get_template('createPostView.sql')
@@ -47,7 +45,8 @@ def updateUserAndPostData(cur, conn, scraperInput, userData, searchId):
     userData["search"] = search.append(searchId)
     if (scraperInput["search"]["email"] != ""):
         userData["email"] = clean.extractEmails(userData["biography"], scraperInput["search"]["email"])
-    userData["num_posts"] = userData["edge_owner_to_timeline_media"]["count"]
+    if "edge_owner_to_timeline_media" in userData:
+        userData["num_posts"] = userData["edge_owner_to_timeline_media"]["count"]
     userData["full_name"] = clean.removeEmojisAndOther(userData["full_name"])
     userData["biography"] = clean.removeEmojisAndOther(userData["biography"])
     updateUserQuery = updateUserTemp.render(tableName = "ig_users", userData = userData,
@@ -114,7 +113,9 @@ def instagramDataScraper():
     #cur.execute(getRecordIdQuery)
     searchId = cur.fetchone()[0]
 
-    users = search.searchGoogleCSE(scraperInput, cur, conn)
+    # Specify if rows should be inserted into raw users table
+    # True to insert, False otherwise
+    users = search.searchGoogleCSE(scraperInput, cur, conn, False)
 
     for user in users:
         userData = extractData.getUserData(user)
@@ -152,6 +153,7 @@ def instagramDataScraper():
             print(internalErr)
         except psycopg2.ProgrammingError as programErr:
             print("errorPscyopg2: programErr")
+            print(programErr)
             print("QUERY:\n" + insertUserQuery)
         else:
             conn.commit()
@@ -185,10 +187,11 @@ def instagramDataScraper():
             except psycopg2.InternalError as internalErr:
                 print("errorPsycopg2: internalErr")
                 print(internalErr)
-            except psycopg2.error.SyntaxError as syntaxError:
+            except psycopg2.errors.SyntaxError as syntaxError:
                 print("errorPsycopg2: syntaxErr")
                 print(syntaxErr)
                 print("Query\n", insertPostQuery)
+                exit(1)
             else:
                 conn.commit()
                 print("INSERT ROW IN POSTS")
