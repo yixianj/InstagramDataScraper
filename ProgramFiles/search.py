@@ -13,7 +13,7 @@ import socket
 insertRawUserDataP1 = """INSERT INTO raw_user_data(user_data) VALUES ($$ """
 insertRawUserDataP2 = """$$);"""
 
-def searchGoogleCSE(scraperInput, cur, conn):
+def searchGoogleCSE(scraperInput, cur, conn, insertRaw):
     users = []
     service = build("customsearch", "v1",
                     developerKey="AIzaSyBhazBCynmi_LJsc8ZrgUs5bBLcSmpC024")
@@ -71,17 +71,18 @@ def searchGoogleCSE(scraperInput, cur, conn):
                 print("assignUserDataError: JSON User data cannot be extracted")
                 continue
 
-            try:
-                userData = extractData.getUserData(data['entry_data']['ProfilePage'][0]['graphql']['user'])
-                cur.execute(insertRawUserDataP1 + json.dumps(userData) + insertRawUserDataP2)
-                conn.commit()
-                print("INSERT ROW INTO: raw_user_data")
-            except psycopg2.ProgrammingError as progErr:
-                print("psycopg2Err: progErr")
-                print(progErr)
-                print("Can't insert data")
-                print("###USERDATA###\n" + json.dumps(userData))
-                print("\n###QUERY###\n" + insertRawUserDataP1 + json.dumps(userData) + insertRawUserDataP2)
-                exit(1)
+            if insertRaw:
+                try:
+                    userData = extractData.getUserData(data['entry_data']['ProfilePage'][0]['graphql']['user'])
+                    cur.execute(insertRawUserDataP1 + json.dumps(userData) + insertRawUserDataP2)
+                    conn.commit()
+                    print("INSERT ROW INTO: raw_user_data")
+                except psycopg2.ProgrammingError as progErr:
+                    print("psycopg2Err: progErr")
+                    print(progErr)
+                    print("Can't insert data")
+                    print("###USERDATA###\n" + json.dumps(userData))
+                    print("\n###QUERY###\n" + insertRawUserDataP1 + json.dumps(userData) + insertRawUserDataP2)
+                    exit(1)
     print("Finished GoogleCSE search\n# Results: " + str(len(users)))
     return users
