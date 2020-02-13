@@ -16,7 +16,7 @@ insertRawUserDataP2 = """$$);"""
 def searchGoogleCSE(scraperInput, cur, conn, insertRaw):
     users = []
     service = build("customsearch", "v1",
-                    developerKey="AIzaSyBhazBCynmi_LJsc8ZrgUs5bBLcSmpC024")
+                    developerKey="") # ADD DEVELOPER KEY HERE. GET FROM GOOGLE CSE PAGE.
     page = 1
     userNum = 0
     while (page < 100):
